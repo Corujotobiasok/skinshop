@@ -8,10 +8,6 @@ from flask import (
     request
 )
 
-from dotenv import load_dotenv
-
-
-# Import para Vercel
 from steam import (
     get_login_url,
     verify_steam,
@@ -20,8 +16,27 @@ from steam import (
 )
 
 
-load_dotenv()
 
+# ==============================
+# CONFIGURACIÓN DEMO
+# ==============================
+
+SECRET_KEY = "b714d146b273ca762ea48404f6551ee271c25bd3e32a7ef0d4b4d3855627fe6e"
+
+STEAM_API_KEY = "483B8596662FC2F74C8C0E0D990A75F1"
+
+DOMAIN = "https://skinshop-pw3waptrf-tobias-projects-3446f3a7.vercel.app"
+
+
+
+# Guardamos la API KEY para steam.py
+os.environ["STEAM_API_KEY"] = STEAM_API_KEY
+
+
+
+# ==============================
+# FLASK
+# ==============================
 
 app = Flask(
     __name__,
@@ -30,21 +45,20 @@ app = Flask(
 )
 
 
-app.secret_key = os.getenv(
-    "SECRET_KEY",
-    "default-secret-key-change-this"
-)
+app.secret_key = SECRET_KEY
 
 
-DOMAIN = os.getenv(
-    "DOMAIN",
-    "http://127.0.0.1:5000"
-)
+
+print("==========================")
+print("STEAM LOGIN")
+print("DOMAIN:", DOMAIN)
+print("==========================")
 
 
-print("STEAM DOMAIN:", DOMAIN)
 
-
+# ==============================
+# HOME
+# ==============================
 
 @app.route("/")
 def home():
@@ -56,37 +70,63 @@ def home():
 
 
 
+# ==============================
+# LOGIN STEAM
+# ==============================
+
 @app.route("/login")
 def login():
 
     try:
 
-        steam_url = get_login_url(
+        steam_login_url = get_login_url(
             DOMAIN
         )
 
-        return redirect(
-            steam_url
+        print(
+            "STEAM LOGIN URL:",
+            steam_login_url
         )
 
 
-    except Exception as e:
+        return redirect(
+            steam_login_url
+        )
+
+
+    except Exception as error:
 
         print(
             "LOGIN ERROR:",
-            e
+            error
         )
 
-        return "Error creando login de Steam"
+        return "Error creando login Steam"
 
 
+
+# ==============================
+# CALLBACK STEAM
+# ==============================
 
 @app.route("/auth/steam/callback")
 def steam_callback():
 
     try:
 
-        if not verify_steam(request.args):
+
+        print(
+            "STEAM RESPONSE:",
+            request.args
+        )
+
+
+        valid = verify_steam(
+            request.args
+        )
+
+
+        if not valid:
 
             return "Steam verification failed"
 
@@ -99,12 +139,18 @@ def steam_callback():
 
         if not identity:
 
-            return "Steam ID missing"
+            return "Steam ID not found"
 
 
 
         steam_id = get_steam_id(
             identity
+        )
+
+
+        print(
+            "STEAM ID:",
+            steam_id
         )
 
 
@@ -115,26 +161,35 @@ def steam_callback():
 
         if not user:
 
-            return "Could not get Steam profile"
+            return "Steam profile error"
 
 
 
         session["user"] = user
 
 
+
         return redirect("/")
 
 
-    except Exception as e:
+
+    except Exception as error:
+
 
         print(
-            "STEAM CALLBACK ERROR:",
-            e
+            "CALLBACK ERROR:",
+            error
         )
+
 
         return "Steam callback error"
 
 
+
+
+# ==============================
+# LOGOUT
+# ==============================
 
 @app.route("/logout")
 def logout():
@@ -142,3 +197,5 @@ def logout():
     session.clear()
 
     return redirect("/")
+
+
