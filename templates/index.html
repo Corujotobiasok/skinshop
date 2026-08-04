@@ -1,20 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkinShop</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
 
     <h1>SkinShop</h1>
-    <p>Proyecto Flask funcionando en Vercel.
-        brbr tun tun sagur
-    </p>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% if user %}
+
+        <img src="{{ user.avatar }}">
+
+        <h2>{{ user.name }}</h2>
+
+        <a href="/logout">
+            Cerrar sesión
+        </a>
+
+    {% else %}
+
+        <a href="/login">
+            Iniciar sesión con Steam
+        </a>
+
+    {% endif %}
 
 </body>
+
 </html>
