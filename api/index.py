@@ -10,6 +10,7 @@ from flask import (
 
 from dotenv import load_dotenv
 
+
 from .steam import (
     get_login_url,
     verify_steam,
@@ -23,7 +24,8 @@ load_dotenv()
 
 app = Flask(
     __name__,
-    template_folder="../templates"
+    template_folder="../templates",
+    static_folder="../static"
 )
 
 
@@ -39,7 +41,7 @@ DOMAIN = os.getenv(
 
 
 @app.route("/")
-def index():
+def home():
 
     return render_template(
         "index.html",
@@ -63,17 +65,35 @@ def steam_callback():
 
     if not verify_steam(request.args):
 
-        return "Steam authentication failed"
+        return "Steam verification failed"
+
+
+
+    identity = request.args.get(
+        "openid.claimed_id"
+    )
+
+
+    if not identity:
+
+        return "Steam ID missing"
+
 
 
     steam_id = get_steam_id(
-        request.args["openid.claimed_id"]
+        identity
     )
 
 
     user = get_profile(
         steam_id
     )
+
+
+    if not user:
+
+        return "User data error"
+
 
 
     session["user"] = user
@@ -83,11 +103,10 @@ def steam_callback():
 
 
 
+
 @app.route("/logout")
 def logout():
 
     session.clear()
 
     return redirect("/")
-
-

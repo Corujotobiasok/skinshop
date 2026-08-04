@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="es">
 
 <head>
@@ -13,29 +12,32 @@
 
 body{
 
-background:#111;
+background:#101010;
 color:white;
 font-family:Arial;
 text-align:center;
-padding-top:100px;
+padding-top:80px;
 
 }
 
 
-img{
+.avatar{
 
+width:120px;
 border-radius:50%;
 
 }
 
 
-a{
+.button{
 
-color:white;
-background:#1b2838;
+display:inline-block;
 padding:12px 25px;
-border-radius:8px;
+background:#1b2838;
+color:white;
 text-decoration:none;
+border-radius:8px;
+margin-top:20px;
 
 }
 
@@ -55,7 +57,8 @@ text-decoration:none;
 {% if user %}
 
 
-<img src="{{user.avatar}}" width="120">
+<img class="avatar"
+src="{{user.avatar}}">
 
 
 <h2>
@@ -69,25 +72,30 @@ SteamID:
 </p>
 
 
-<a href="{{user.profile}}">
-Ver perfil Steam
+<a class="button"
+href="{{user.profile}}">
+Perfil Steam
 </a>
 
 
-<br><br>
+<br>
 
 
-<a href="/logout">
+<a class="button"
+href="/logout">
 Cerrar sesión
 </a>
+
 
 
 {% else %}
 
 
+<a class="button"
+href="/login">
 
-<a href="/login">
-🔥 Iniciar sesión con Steam
+🔥 Entrar con Steam
+
 </a>
 
 
@@ -97,6 +105,5 @@ Cerrar sesión
 
 
 </body>
-
 
 </html>
