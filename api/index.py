@@ -11,7 +11,8 @@ from flask import (
 from dotenv import load_dotenv
 
 
-from .steam import (
+# Import para Vercel
+from steam import (
     get_login_url,
     verify_steam,
     get_steam_id,
@@ -30,13 +31,18 @@ app = Flask(
 
 
 app.secret_key = os.getenv(
-    "SECRET_KEY"
+    "SECRET_KEY",
+    "default-secret-key-change-this"
 )
 
 
 DOMAIN = os.getenv(
-    "DOMAIN"
+    "DOMAIN",
+    "http://127.0.0.1:5000"
 )
+
+
+print("STEAM DOMAIN:", DOMAIN)
 
 
 
@@ -53,54 +59,80 @@ def home():
 @app.route("/login")
 def login():
 
-    return redirect(
-        get_login_url(DOMAIN)
-    )
+    try:
+
+        steam_url = get_login_url(
+            DOMAIN
+        )
+
+        return redirect(
+            steam_url
+        )
+
+
+    except Exception as e:
+
+        print(
+            "LOGIN ERROR:",
+            e
+        )
+
+        return "Error creando login de Steam"
 
 
 
 @app.route("/auth/steam/callback")
 def steam_callback():
 
+    try:
 
-    if not verify_steam(request.args):
+        if not verify_steam(request.args):
 
-        return "Steam verification failed"
-
-
-
-    identity = request.args.get(
-        "openid.claimed_id"
-    )
-
-
-    if not identity:
-
-        return "Steam ID missing"
+            return "Steam verification failed"
 
 
 
-    steam_id = get_steam_id(
-        identity
-    )
+        identity = request.args.get(
+            "openid.claimed_id"
+        )
 
 
-    user = get_profile(
-        steam_id
-    )
+        if not identity:
 
-
-    if not user:
-
-        return "User data error"
+            return "Steam ID missing"
 
 
 
-    session["user"] = user
+        steam_id = get_steam_id(
+            identity
+        )
 
 
-    return redirect("/")
+        user = get_profile(
+            steam_id
+        )
 
+
+        if not user:
+
+            return "Could not get Steam profile"
+
+
+
+        session["user"] = user
+
+
+        return redirect("/")
+
+
+    except Exception as e:
+
+        print(
+            "STEAM CALLBACK ERROR:",
+            e
+        )
+
+        return "Steam callback error"
 
 
 
