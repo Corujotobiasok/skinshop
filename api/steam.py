@@ -3,102 +3,133 @@ import requests
 from urllib.parse import urlencode
 
 
-STEAM_OPENID = "https://steamcommunity.com/openid/login"
+STEAM_OPENID_URL = "https://steamcommunity.com/openid/login"
 
 
-def get_login_url(domain):
+def get_login_url(domain: str) -> str:
+    """
+    Genera la URL de autenticación OpenID de Steam.
+    """
+
+    domain = domain.rstrip("/")
 
     params = {
-
-        "openid.ns":
-        "http://specs.openid.net/auth/2.0",
-
-        "openid.mode":
-        "checkid_setup",
-
-        "openid.return_to":
-        f"{domain}/auth/steam/callback",
-
-        "openid.realm":
-        domain,
-
-        "openid.identity":
-        "http://specs.openid.net/auth/2.0/identifier_select",
-
-        "openid.claimed_id":
-        "http://specs.openid.net/auth/2.0/identifier_select"
-
+        "openid.ns": "http://specs.openid.net/auth/2.0",
+        "openid.mode": "checkid_setup",
+        "openid.return_to": f"{domain}/auth/steam/callback",
+        "openid.realm": domain,
+        "openid.identity": (
+            "http://specs.openid.net/auth/2.0/identifier_select"
+        ),
+        "openid.claimed_id": (
+            "http://specs.openid.net/auth/2.0/identifier_select"
+        )
     }
 
-    return STEAM_OPENID + "?" + urlencode(params)
+    return f"{STEAM_OPENID_URL}?{urlencode(params)}"
 
 
 
-def verify_steam(response):
+def verify_steam(response_data) -> bool:
+    """
+    Verifica que la respuesta enviada por Steam sea válida.
+    """
 
-    data = {}
+    verification_data = {
+        key: value
+        for key, value in response_data.items()
+        if key.startswith("openid")
+    }
 
-    for key, value in response.items():
-
-        if key.startswith("openid"):
-            data[key] = value
-
-
-    data["openid.mode"] = "check_authentication"
-
-
-    r = requests.post(
-        STEAM_OPENID,
-        data=data
-    )
+    verification_data["openid.mode"] = "check_authentication"
 
 
-    return "is_valid:true" in r.text
+    try:
+
+        response = requests.post(
+            STEAM_OPENID_URL,
+            data=verification_data,
+            timeout=10
+        )
+
+        return "is_valid:true" in response.text
+
+
+    except requests.RequestException:
+
+        return False
 
 
 
-def get_steam_id(identity):
 
-    return identity.split("/")[-1]
+def extract_steam_id(identity_url: str) -> str:
+    """
+    Extrae el SteamID64 desde la URL OpenID.
+    """
 
-
-
-def get_profile(steam_id):
-
-    key = os.getenv("STEAM_API_KEY")
+    return identity_url.rstrip("/").split("/")[-1]
 
 
-    url = (
+
+
+def get_profile(steam_id: str) -> dict:
+    """
+    Obtiene información pública del usuario usando Steam Web API.
+    """
+
+    api_key = os.getenv("STEAM_API_KEY")
+
+
+    if not api_key:
+        raise Exception(
+            "STEAM_API_KEY no configurada"
+        )
+
+
+    endpoint = (
         "https://api.steampowered.com/"
         "ISteamUser/GetPlayerSummaries/v2/"
     )
 
 
     params = {
-
-        "key": key,
+        "key": api_key,
         "steamids": steam_id
-
     }
 
 
-    r = requests.get(
-        url,
-        params=params
+    response = requests.get(
+        endpoint,
+        params=params,
+        timeout=10
     )
 
 
-    data = r.json()
+    response.raise_for_status()
 
 
-    player = data["response"]["players"][0]
+    data = response.json()
+
+
+    players = data.get(
+        "response",
+        {}
+    ).get(
+        "players",
+        []
+    )
+
+
+    if not players:
+        return None
+
+
+    player = players[0]
 
 
     return {
-
-        "steamid": player["steamid"],
-        "name": player["personaname"],
-        "avatar": player["avatarfull"],
-        "profile": player["profileurl"]
-
+        "steamid": player.get("steamid"),
+        "name": player.get("personaname"),
+        "avatar": player.get("avatarfull"),
+        "profile": player.get("profileurl")
     }
