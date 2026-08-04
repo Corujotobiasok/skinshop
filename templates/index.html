@@ -1,35 +1,102 @@
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
 
-    <meta charset="UTF-8">
-    <title>SkinShop</title>
+<meta charset="UTF-8">
+
+<title>SkinShop</title>
+
+
+<style>
+
+body{
+
+background:#111;
+color:white;
+font-family:Arial;
+text-align:center;
+padding-top:100px;
+
+}
+
+
+img{
+
+border-radius:50%;
+
+}
+
+
+a{
+
+color:white;
+background:#1b2838;
+padding:12px 25px;
+border-radius:8px;
+text-decoration:none;
+
+}
+
+</style>
+
 
 </head>
 
+
 <body>
 
-    <h1>SkinShop</h1>
 
-    {% if user %}
+<h1>SkinShop</h1>
 
-        <img src="{{ user.avatar }}">
 
-        <h2>{{ user.name }}</h2>
 
-        <a href="/logout">
-            Cerrar sesión
-        </a>
+{% if user %}
 
-    {% else %}
 
-        <a href="/login">
-            Iniciar sesión con Steam
-        </a>
+<img src="{{user.avatar}}" width="120">
 
-    {% endif %}
+
+<h2>
+{{user.name}}
+</h2>
+
+
+<p>
+SteamID:
+{{user.steamid}}
+</p>
+
+
+<a href="{{user.profile}}">
+Ver perfil Steam
+</a>
+
+
+<br><br>
+
+
+<a href="/logout">
+Cerrar sesión
+</a>
+
+
+{% else %}
+
+
+
+<a href="/login">
+🔥 Iniciar sesión con Steam
+</a>
+
+
+
+{% endif %}
+
+
 
 </body>
+
 
 </html>
