@@ -8,194 +8,145 @@ from flask import (
     request
 )
 
-from steam import (
-    get_login_url,
-    verify_steam,
+from dotenv import load_dotenv
+
+from .steam import (
+    create_login_url,
+    validate_login,
     get_steam_id,
-    get_profile
+    get_user
 )
 
 
 
-# ==============================
-# CONFIGURACIÓN DEMO
-# ==============================
-
-SECRET_KEY = "b714d146b273ca762ea48404f6551ee271c25bd3e32a7ef0d4b4d3855627fe6e"
-
-STEAM_API_KEY = "483B8596662FC2F74C8C0E0D990A75F1"
-
-DOMAIN = "https://skinshop-pw3waptrf-tobias-projects-3446f3a7.vercel.app"
+load_dotenv()
 
 
-
-# Guardamos la API KEY para steam.py
-os.environ["STEAM_API_KEY"] = STEAM_API_KEY
-
-
-
-# ==============================
-# FLASK
-# ==============================
 
 app = Flask(
     __name__,
-    template_folder="../templates",
-    static_folder="../static"
+    template_folder="../templates"
 )
 
 
-app.secret_key = SECRET_KEY
+
+app.secret_key = os.getenv(
+    "SECRET_KEY",
+    "demo-secret-key"
+)
 
 
 
-print("==========================")
-print("STEAM LOGIN")
-print("DOMAIN:", DOMAIN)
-print("==========================")
+DOMAIN = os.getenv(
+    "DOMAIN"
+)
 
 
-
-# ==============================
-# HOME
-# ==============================
 
 @app.route("/")
-def home():
+def index():
+
+    if "user" in session:
+
+        return redirect("/dashboard")
+
 
     return render_template(
-        "index.html",
-        user=session.get("user")
+        "index.html"
     )
 
 
 
-# ==============================
-# LOGIN STEAM
-# ==============================
-
 @app.route("/login")
 def login():
 
-    try:
+    login_url = create_login_url(
+        DOMAIN
+    )
 
-        steam_login_url = get_login_url(
-            DOMAIN
-        )
-
-        print(
-            "STEAM LOGIN URL:",
-            steam_login_url
-        )
+    return redirect(
+        login_url
+    )
 
 
-        return redirect(
-            steam_login_url
-        )
-
-
-    except Exception as error:
-
-        print(
-            "LOGIN ERROR:",
-            error
-        )
-
-        return "Error creando login Steam"
-
-
-
-# ==============================
-# CALLBACK STEAM
-# ==============================
 
 @app.route("/auth/steam/callback")
 def steam_callback():
 
-    try:
+
+    if not validate_login(
+        request.args
+    ):
+
+        return "Steam authentication failed"
 
 
-        print(
-            "STEAM RESPONSE:",
-            request.args
+
+    identity = request.args.get(
+        "openid.claimed_id"
+    )
+
+
+    if not identity:
+
+        return "Steam ID missing"
+
+
+
+    steam_id = get_steam_id(
+        identity
+    )
+
+
+
+    user = get_user(
+        steam_id
+    )
+
+
+    if not user:
+
+        return "Steam user not found"
+
+
+
+    session["user"] = user
+
+
+
+    return redirect(
+        "/dashboard"
+    )
+
+
+
+
+
+@app.route("/dashboard")
+def dashboard():
+
+
+    if "user" not in session:
+
+        return redirect(
+            "/login"
         )
 
 
-        valid = verify_steam(
-            request.args
-        )
-
-
-        if not valid:
-
-            return "Steam verification failed"
-
-
-
-        identity = request.args.get(
-            "openid.claimed_id"
-        )
-
-
-        if not identity:
-
-            return "Steam ID not found"
-
-
-
-        steam_id = get_steam_id(
-            identity
-        )
-
-
-        print(
-            "STEAM ID:",
-            steam_id
-        )
-
-
-        user = get_profile(
-            steam_id
-        )
-
-
-        if not user:
-
-            return "Steam profile error"
-
-
-
-        session["user"] = user
-
-
-
-        return redirect("/")
-
-
-
-    except Exception as error:
-
-
-        print(
-            "CALLBACK ERROR:",
-            error
-        )
-
-
-        return "Steam callback error"
+    return render_template(
+        "dashboard.html",
+        user=session["user"]
+    )
 
 
 
 
-# ==============================
-# LOGOUT
-# ==============================
 
 @app.route("/logout")
 def logout():
 
     session.clear()
 
-    return redirect("/")
-
-
+    return redirect(
+        "/"
+    )
